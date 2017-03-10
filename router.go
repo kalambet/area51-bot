@@ -1,18 +1,14 @@
 package area51bot
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 	"os"
-
-	"github.com/kalambet/go-utils"
-	"io/ioutil"
-	"appengine_internal/memcache"
 )
 
 const (
-	HookTypeParam  ="type"
-	DiscourseValue ="discourse"
+	HookTypeParam  = "type"
+	DiscourseValue = "discourse"
 )
 
 func SetupRouter() {
@@ -25,15 +21,8 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func hookHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	utils.PrintInColor(string(body), utils.Green)
-
-	/*switch r.URL.Query().Get(HookTypeParam) {
+	switch r.URL.Query().Get(HookTypeParam) {
 	case DiscourseValue:
-		discourse.HandleEvent(r.Body)
-	}*/
+		HandleEvent(r)
+	}
 }
