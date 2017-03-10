@@ -1,0 +1,14 @@
+application: technogeek-labs
+version: alpha-001
+runtime: go
+api_version: go1
+
+env_variables:
+  DISCOURSE_WEBHOOK: ""
+
+handlers:
+- url: /health/
+  script: _go_app
+
+- url: /hook/(.*)
+  script: _go_app
