@@ -2,9 +2,9 @@ package area51bot
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
+	"io"
 	"net/http"
-	"os"
 )
 
 const (
@@ -39,6 +39,7 @@ type Topic struct {
 	UpdatedAt string `json:"updated_at"`
 	Visible   bool   `json:"visible"`
 	UserID    int    `json:"user_id"`
+	Slug      string `json:"slug"`
 }
 
 type User struct {
@@ -48,74 +49,60 @@ type User struct {
 }
 
 type NewTopicPayload struct {
-	Topic Topic `json:"topic"`
-	User  User  `json:"user"`
+	Topic    Topic `json:"topic"`
+	User     User  `json:"user"`
+	ForumURL string
+}
+
+func (p *NewTopicPayload) Message() string {
+	url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
+	return fmt.Sprintf("%s (%s) создал новый топик на форуме `%s`\n%s", p.User.Name, p.User.UserName, p.Topic.Title, url)
 }
 
 type NewPostPayload struct {
-	Topic Topic `json:"topic"`
-	Post  Post  `json:"post"`
-	User  User  `json:"user"`
+	Topic    Topic `json:"topic"`
+	Post     Post  `json:"post"`
+	User     User  `json:"user"`
+	ForumURL string
+}
+
+func (p *NewPostPayload) Message() string {
+	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
+	return fmt.Sprintf("%s (%s) написал новый пост на форуме %s\n\n%s", p.User.Name, p.User.UserName, url, p.Post.Preview)
 }
 
 // HandleEvent gets request detects vent type and depending of
 // that type creates and sends Telegram message
-func HandleEvent(r *http.Request) error {
+func HandleEvent(r *http.Request) (Notification, error) {
 	e := r.Header.Get(EventHeader)
-	m := &Message{Type: e}
-
-	log.Printf("TADA %s", e)
+	adr := r.Header.Get(InstanceHeader)
 
 	switch e {
 	case TopicCreatedEventType:
-		handleCreatedTopicEvent(m)
+		return handleCreatedTopicEvent(adr, r.Body)
 	case PostCreatedEventType:
-		handleCreatedPostEvent(m)
+		return handleCreatedPostEvent(adr, r.Body)
 	default:
-		return nil
+		return nil, nil
 	}
-
-	PostNotification(m)
-
-	return nil
 }
 
-func handleCreatedTopicEvent(m *Message) error {
-	f, err := os.Open("")
+func handleCreatedTopicEvent(adr string, r io.ReadCloser) (Notification, error) {
+	t := &NewTopicPayload{ForumURL: adr}
+	err := json.NewDecoder(r).Decode(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	t := &NewTopicPayload{}
-	err = json.NewDecoder(f).Decode(t)
-	if err != nil {
-		return err
-	}
-
-	m.Name = t.User.Name
-	m.UserName = t.User.UserName
-	m.Text = t.Topic.Title
-
-	return nil
+	return t, nil
 }
 
-func handleCreatedPostEvent(m *Message) error {
-	f, err := os.Open("")
+func handleCreatedPostEvent(adr string, r io.ReadCloser) (Notification, error) {
+	t := &NewPostPayload{ForumURL: adr}
+	err := json.NewDecoder(r).Decode(t)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	t := &NewPostPayload{}
-	err = json.NewDecoder(f).Decode(t)
-	if err != nil {
-		return err
-	}
-
-	m.Name = t.User.Name
-	m.UserName = t.User.UserName
-	m.Text = t.Post.Preview
-
-	log.Println("TADA")
-
-	return nil
+	return t, nil
 }

@@ -21,8 +21,23 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func hookHandler(w http.ResponseWriter, r *http.Request) {
+	var n Notification
+	var err error
+
 	switch r.URL.Query().Get(HookTypeParam) {
 	case DiscourseValue:
-		HandleEvent(r)
+		n, err = HandleEvent(r)
+	default:
+		return
 	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	if n == nil {
+		return
+	}
+
 }
