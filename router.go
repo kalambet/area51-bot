@@ -1,9 +1,14 @@
 package area51bot
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
 )
 
 const (
@@ -12,21 +17,28 @@ const (
 )
 
 func SetupRouter() {
-	http.HandleFunc("/health/", healthHandler)
+	http.HandleFunc("/", healthHandler)
 	http.HandleFunc(fmt.Sprintf("/hook/%s/", os.Getenv("DISCOURSE_WEBHOOK")), hookHandler)
+	http.HandleFunc(fmt.Sprintf("/telegram/%s/", os.Getenv("TELEGRAM_WEBHOOK")), telegramHandler)
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "All your base are belong to us!")
 }
 
 func hookHandler(w http.ResponseWriter, r *http.Request) {
-	var n Notification
-	var err error
+	ctx := appengine.NewContext(r)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Errorf(ctx, "hookHandler error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	switch r.URL.Query().Get(HookTypeParam) {
 	case DiscourseValue:
-		n, err = HandleEvent(r)
+		_, err = HandleDiscourseEvent(ctx, r.Header, body)
 	default:
 		return
 	}
@@ -36,8 +48,21 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if n == nil {
+	w.WriteHeader(http.StatusOK)
+}
+
+func telegramHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	u := Update{}
+	err := json.NewDecoder(r.Body).Decode(&u)
+
+	if err != nil {
+		log.Errorf(ctx, "Telegram update decoding error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	HandleTelegramUpdate(ctx, u)
+	w.WriteHeader(http.StatusOK)
 }

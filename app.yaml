@@ -1,14 +1,20 @@
 application: technogeek-labs
-version: alpha-001
+version: alpha-011
 runtime: go
 api_version: go1
 
 env_variables:
   DISCOURSE_WEBHOOK: ""
+  TELEGRAM_WEBHOOK: "]"
+  TELEGRAM_SECRET: ""
+  TELEGRAM_BOT_USERNAME: ""
 
 handlers:
-- url: /health/
+- url: /
   script: _go_app
 
 - url: /hook/(.*)
+  script: _go_app
+
+- url: /telegram/(.*)
   script: _go_app
