@@ -1,5 +1,3 @@
-application: technogeek-labs
-version: alpha-011
 runtime: go
 api_version: go1
 
