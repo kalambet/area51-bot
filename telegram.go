@@ -49,24 +49,22 @@ func handleCommand(ctx context.Context, m *Message) {
 	log.Infof(ctx, "Command: %s", m.Text)
 
 	commands := strings.Split(m.Text, " ")
-	if len(commands) == 0 || commands[0] != "/area51" {
+	if len(commands) == 0 || commands[0] != os.Getenv("BOT_SUBSCRIPTION_COMMAND") {
 		return
 	}
 
-	if strings.Contains(strings.ToUpper(m.Text), strings.ToUpper("не рассказывай нам про форум")) {
-		SendMessage(ctx, m.Chat.ID, "чёт не ясно, что надо 😗")
-	} else if strings.Contains(strings.ToUpper(m.Text), strings.ToUpper("рассказывай нам про форум")) {
+	if strings.Contains(strings.ToUpper(m.Text), strings.ToUpper("subscribe")) {
 		success, err := SubscribeChat(ctx, m.Chat.ID, ThemeDiscourse)
 		if err != nil {
 			log.Errorf(ctx, "Problem interacting with Datastore: %s", err.Error())
-			SendMessage(ctx, m.Chat.ID, "неа")
+			SendMessage(ctx, m.Chat.ID, "sorry, something went wrong")
 			return
 		}
 
 		if success {
-			SendMessage(ctx, m.Chat.ID, "нну ок")
+			SendMessage(ctx, m.Chat.ID, "✅ ")
 		} else {
-			SendMessage(ctx, m.Chat.ID, "так я же уже рассказываю вам про форум")
+			SendMessage(ctx, m.Chat.ID, "this chat alredy recieving notifications")
 		}
 	} else {
 		SendMessage(ctx, m.Chat.ID, "¯\\_(ツ)_/¯")

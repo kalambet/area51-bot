@@ -62,7 +62,7 @@ type NewTopicPayload struct {
 
 func (p *NewTopicPayload) Message() string {
 	url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
-	return fmt.Sprintf("%s (%s) создал новый <a href=\"%s\">топик</a> на форуме:\n\n%s", p.User.Name, p.User.UserName, url, p.Topic.Title)
+	return fmt.Sprintf("%s (%s) created new <a href=\"%s\">tpoic</a>:\n%s", p.User.Name, p.User.UserName, url, p.Topic.Title)
 }
 
 type NewPostPayload struct {
@@ -77,10 +77,10 @@ func (p *NewPostPayload) Message() string {
 
 	preview := p.Post.Preview
 	if strings.Contains(preview, "<div") || strings.Contains(preview, "<blockquote") {
-		preview = "но там чёт сложное и Телеграм такое не покажет"
+		preview = "but it's not possible for Telegram to do a preview"
 	}
 
-	return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост</a> на форуме:\n\n%s", p.User.Name, p.User.UserName, url, preview)
+	return fmt.Sprintf("%s (%s) made new <a href=\"%s\">post</a>:\n\n%s", p.User.Name, p.User.UserName, url, preview)
 }
 
 // HandleDiscourseEvent gets request detects vent type and depending of
