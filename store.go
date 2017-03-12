@@ -63,6 +63,8 @@ func NotifySubscribersByTheme(ctx context.Context, theme string, notify Notify) 
 			log.Errorf(ctx, "Problem on subscribers query %s", err.Error())
 			return
 		}
+
+		// Send notification
 		notify(s.ChatID)
 	}
 }

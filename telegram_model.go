@@ -11,6 +11,10 @@ const (
 	CommandSendMessage = "sendMessage"
 )
 
+type ExternalNotification interface {
+	Message() string
+}
+
 type Chat struct {
 	ID        int64  `json:"id"`
 	Type      string `json:"type"`

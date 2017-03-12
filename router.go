@@ -36,17 +36,27 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var notification ExternalNotification
 	switch r.URL.Query().Get(HookTypeParam) {
 	case DiscourseValue:
-		_, err = HandleDiscourseEvent(ctx, r.Header, body)
+		notification, err = HandleDiscourseEvent(ctx, r.Header, body)
 	default:
 		return
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	if notification == nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
+		SendFormattedMessage(ctx, chat, notification.Message(), HTMLFormatting)
+	})
 
 	w.WriteHeader(http.StatusOK)
 }
