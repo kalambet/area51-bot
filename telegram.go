@@ -1,4 +1,4 @@
-package area51bot
+package teledisq
 
 import (
 	"fmt"
@@ -49,11 +49,11 @@ func handleCommand(ctx context.Context, m *Message) {
 	log.Infof(ctx, "Command: %s", m.Text)
 
 	commands := strings.Split(m.Text, " ")
-	if len(commands) == 0 || commands[0] != os.Getenv("BOT_SUBSCRIPTION_COMMAND") {
+	if len(commands) == 0 || commands[0] != os.Getenv("BOT_COMMAND") {
 		return
 	}
 
-	if strings.Contains(strings.ToUpper(m.Text), strings.ToUpper("subscribe")) {
+	if strings.Contains(strings.ToUpper(m.Text), strings.ToUpper(os.Getenv("BOT_SUBSCRIPTION_COMMAND"))) {
 		success, err := SubscribeChat(ctx, m.Chat.ID, ThemeDiscourse)
 		if err != nil {
 			log.Errorf(ctx, "Problem interacting with Datastore: %s", err.Error())

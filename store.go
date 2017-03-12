@@ -1,4 +1,4 @@
-package area51bot
+package teledisq
 
 import (
 	"golang.org/x/net/context"

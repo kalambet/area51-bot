@@ -6,7 +6,9 @@ env_variables:
   TELEGRAM_WEBHOOK: ""
   TELEGRAM_SECRET: ""
   TELEGRAM_BOT_USERNAME: ""
+  BOT_COMMAND: ""
   BOT_SUBSCRIPTION_COMMAND: ""
+
 
 handlers:
 - url: /
