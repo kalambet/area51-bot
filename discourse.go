@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"strings"
-
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
 )
@@ -62,7 +60,7 @@ type NewTopicPayload struct {
 
 func (p *NewTopicPayload) Message() string {
 	url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
-	return fmt.Sprintf("%s (%s) создал новый <a href=\"%s\">топик</a> на форуме:\n\n%s", p.User.Name, p.User.UserName, url, p.Topic.Title)
+	return fmt.Sprintf("%s (%s) создал новый топик <a href=\"%s\">%s</a> на форуме", p.User.Name, p.User.UserName, url, p.Topic.Title)
 }
 
 type NewPostPayload struct {
@@ -74,13 +72,7 @@ type NewPostPayload struct {
 
 func (p *NewPostPayload) Message() string {
 	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
-
-	preview := p.Post.Preview
-	if strings.Contains(preview, "<div") || strings.Contains(preview, "<blockquote") {
-		preview = "но там чёт сложное и Телеграм такое не покажет"
-	}
-
-	return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост</a> на форуме:\n\n%s", p.User.Name, p.User.UserName, url, preview)
+	return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост</a> на форуме в топике %s", p.User.Name, p.User.UserName, url, p.Topic.Title)
 }
 
 // HandleDiscourseEvent gets request detects vent type and depending of

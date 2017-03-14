@@ -23,7 +23,7 @@ func HandleTelegramUpdate(ctx context.Context, u Update) {
 
 	if m.IsCommand() {
 		handleCommand(ctx, m)
-	} else if strings.Contains(m.LeftChatMember.UserName, os.Getenv("TELEGRAM_BOT_USERNAME")) {
+	} else if m.LeftChatMember != nil && strings.Contains(m.LeftChatMember.UserName, os.Getenv("TELEGRAM_BOT_USERNAME")) {
 		handleRemoving(ctx, m)
 	}
 }
@@ -69,7 +69,8 @@ func handleCommand(ctx context.Context, m *Message) {
 			SendMessage(ctx, m.Chat.ID, "так я же уже рассказываю вам про форум")
 		}
 	} else {
-		SendMessage(ctx, m.Chat.ID, "¯\\_(ツ)_/¯")
+		question := strings.Join(commands[1:], " ")
+		SendMessage(ctx, m.Chat.ID, fmt.Sprintf("http://lmgtfy.com/?q=%s", url.QueryEscape(question)))
 		return
 	}
 }
@@ -82,7 +83,7 @@ func SendFormattedMessage(ctx context.Context, chat int64, text string, format s
 	payload := make(url.Values)
 
 	payload.Add("chat_id", fmt.Sprintf("%d", chat))
-	payload.Add("text", sanitizeHTMLInput(text))
+	payload.Add("text", text)
 
 	if format != "" {
 		payload.Add("parse_mode", format)
@@ -113,13 +114,4 @@ func makeRequest(ctx context.Context, cmd string, data url.Values) {
 		log.Errorf(ctx, "Bad send message request for '%s'.\nStatus: %s\nPayload: %#v", cmd, resp.Status, data)
 		return
 	}
-}
-
-func sanitizeHTMLInput(text string) string {
-
-	text = strings.Replace(text, "<p>", " ", -1)
-	text = strings.Replace(text, "</p>", " ", -1)
-	text = strings.Replace(text, "\\\"", "\"", -1)
-
-	return text
 }
