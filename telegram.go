@@ -69,8 +69,14 @@ func handleCommand(ctx context.Context, m *Message) {
 			SendMessage(ctx, m.Chat.ID, "так я же уже рассказываю вам про форум")
 		}
 	} else {
-		question := strings.Join(commands[1:], " ")
-		SendMessage(ctx, m.Chat.ID, fmt.Sprintf("http://lmgtfy.com/?q=%s", url.QueryEscape(question)))
+		var msg string
+		if len(commands) == 1 {
+			msg = "нет вопросов - нет ответов"
+		} else {
+			question := strings.Join(commands[1:], " ")
+			msg = fmt.Sprintf("http://lmgtfy.com/?q=%s", url.QueryEscape(question))
+		}
+		SendMessage(ctx, m.Chat.ID, msg)
 		return
 	}
 }
