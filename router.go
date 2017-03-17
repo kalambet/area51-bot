@@ -36,16 +36,24 @@ func hookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	msg := ""
 	switch r.URL.Query().Get(HookTypeParam) {
 	case DiscourseValue:
-		_, err = HandleDiscourseEvent(ctx, r.Header, body)
+		msg, err = HandleDiscourseEvent(ctx, r.Header, body)
 	default:
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
+	}
+
+	if msg != "" {
+		NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
+			SendFormattedMessage(ctx, chat, msg, HTMLFormatting)
+		})
 	}
 
 	w.WriteHeader(http.StatusOK)

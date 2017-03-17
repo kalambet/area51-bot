@@ -19,7 +19,7 @@ const (
 
 type Notify func(chat int64)
 
-// Post represents Discourse post entry from webhook payload
+// Post represents Discourse post entry from web hook payload
 type Post struct {
 	ID              int    `json:"id"`
 	AuthorName      string `json:"name"`
@@ -53,102 +53,42 @@ type User struct {
 	Name     string `json:"name"`
 }
 
-type NewTopicPayload struct {
-	Topic    *Topic `json:"topic"`
-	User     *User  `json:"user"`
-	ForumURL string
-}
-
-func (p *NewTopicPayload) Message() string {
-	url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
-	return fmt.Sprintf("%s (%s) создал новый топик <a href=\"%s\">\"%s\"</a> на форуме", p.User.Name, p.User.UserName, url, p.Topic.Title)
-}
-
-type NewPostPayload struct {
+type DiscoursePayload struct {
 	Topic    *Topic `json:"topic"`
 	Post     *Post  `json:"post"`
 	User     *User  `json:"user"`
 	ForumURL string
 }
 
-func (p *NewPostPayload) Message() string {
-	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
-	return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост в \"%s\"</a>", p.User.Name, p.User.UserName, url, p.Topic.Title)
+func (p *DiscoursePayload) Message(eventType string) string {
+	switch eventType {
+	case PostCreatedEventType:
+		url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
+		return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост в \"%s\"</a>", p.User.Name, p.User.UserName, url, p.Topic.Title)
+	case PostEditedEventType:
+		url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
+		return fmt.Sprintf("%s (%s) обновил <a href=\"%s\">пост в \"%s\"</a>", p.Post.AuthorName, p.Post.UserName, url, p.Topic.Title)
+	case TopicCreatedEventType:
+		url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
+		return fmt.Sprintf("%s (%s) создал новый топик <a href=\"%s\">\"%s\"</a> на форуме", p.User.Name, p.User.UserName, url, p.Topic.Title)
+	}
+
+	return ""
+
 }
 
-type EditedPostPayload struct {
-	Topic    *Topic `json:"topic"`
-	Post     *Post  `json:"post"`
-	ForumURL string
-}
-
-func (p *EditedPostPayload) Message() string {
-	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
-	return fmt.Sprintf("%s (%s) обновил <a href=\"%s\">пост в \"%s\"</a>", p.Post.AuthorName, p.Post.UserName, url, p.Topic.Title)
-}
-
-// HandleDiscourseEvent gets request detects vent type and depending of
+// HandleDiscourseEvent gets request detects event type and depending of
 // that type creates and sends Telegram message
-func HandleDiscourseEvent(ctx context.Context, header http.Header, body []byte) (Notification, error) {
+func HandleDiscourseEvent(ctx context.Context, header http.Header, body []byte) (string, error) {
 	e := header.Get(EventHeader)
 	adr := header.Get(InstanceHeader)
 
-	switch e {
-	case TopicCreatedEventType:
-		return handleCreatedTopicEvent(ctx, adr, body)
-	case PostCreatedEventType:
-		return handleCreatedPostEvent(ctx, adr, body)
-	case PostEditedEventType:
-		return handleEditedPostEvent(ctx, adr, body)
-	default:
-		return nil, nil
-	}
-}
-
-func handleCreatedTopicEvent(ctx context.Context, adr string, body []byte) (Notification, error) {
-	t := &NewTopicPayload{}
-	err := json.Unmarshal(body, t)
+	p := DiscoursePayload{ForumURL: adr}
+	err := json.Unmarshal(body, &p)
 	if err != nil {
-		log.Errorf(ctx, "handleCreatedTopicEvent: %s", err.Error())
-		return nil, err
+		log.Errorf(ctx, "HandleDiscourseEvent: %s", err.Error())
+		return "", err
 	}
-	t.ForumURL = adr
 
-	NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
-		SendFormattedMessage(ctx, chat, t.Message(), HTMLFormatting)
-	})
-
-	return t, nil
-}
-
-func handleCreatedPostEvent(ctx context.Context, adr string, body []byte) (Notification, error) {
-	t := &NewPostPayload{}
-	err := json.Unmarshal(body, t)
-	if err != nil {
-		log.Errorf(ctx, "handleCreatedPostEvent: %s", err.Error())
-		return nil, err
-	}
-	t.ForumURL = adr
-
-	NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
-		SendFormattedMessage(ctx, chat, t.Message(), HTMLFormatting)
-	})
-
-	return t, nil
-}
-
-func handleEditedPostEvent(ctx context.Context, adr string, body []byte) (Notification, error) {
-	t := &EditedPostPayload{}
-	err := json.Unmarshal(body, t)
-	if err != nil {
-		log.Errorf(ctx, "handleCreatedTopicEvent: %s", err.Error())
-		return nil, err
-	}
-	t.ForumURL = adr
-
-	NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
-		SendFormattedMessage(ctx, chat, t.Message(), HTMLFormatting)
-	})
-
-	return t, nil
+	return p.Message(e), nil
 }
