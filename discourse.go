@@ -12,6 +12,7 @@ import (
 const (
 	TopicCreatedEventType = "topic_created"
 	PostCreatedEventType  = "post_created"
+	PostEditedEventType   = "post_edited"
 	EventHeader           = "X-Discourse-Event"
 	InstanceHeader        = "X-Discourse-Instance"
 )
@@ -75,6 +76,17 @@ func (p *NewPostPayload) Message() string {
 	return fmt.Sprintf("%s (%s) написал новый <a href=\"%s\">пост в \"%s\"</a>", p.User.Name, p.User.UserName, url, p.Topic.Title)
 }
 
+type EditedPostPayload struct {
+	Topic    *Topic `json:"topic"`
+	Post     *Post  `json:"post"`
+	ForumURL string
+}
+
+func (p *EditedPostPayload) Message() string {
+	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
+	return fmt.Sprintf("%s (%s) обновил <a href=\"%s\">пост в \"%s\"</a>", p.Post.AuthorName, p.Post.UserName, url, p.Topic.Title)
+}
+
 // HandleDiscourseEvent gets request detects vent type and depending of
 // that type creates and sends Telegram message
 func HandleDiscourseEvent(ctx context.Context, header http.Header, body []byte) (Notification, error) {
@@ -86,6 +98,8 @@ func HandleDiscourseEvent(ctx context.Context, header http.Header, body []byte) 
 		return handleCreatedTopicEvent(ctx, adr, body)
 	case PostCreatedEventType:
 		return handleCreatedPostEvent(ctx, adr, body)
+	case PostEditedEventType:
+		return handleEditedPostEvent(ctx, adr, body)
 	default:
 		return nil, nil
 	}
@@ -112,6 +126,22 @@ func handleCreatedPostEvent(ctx context.Context, adr string, body []byte) (Notif
 	err := json.Unmarshal(body, t)
 	if err != nil {
 		log.Errorf(ctx, "handleCreatedPostEvent: %s", err.Error())
+		return nil, err
+	}
+	t.ForumURL = adr
+
+	NotifySubscribersByTheme(ctx, ThemeDiscourse, func(chat int64) {
+		SendFormattedMessage(ctx, chat, t.Message(), HTMLFormatting)
+	})
+
+	return t, nil
+}
+
+func handleEditedPostEvent(ctx context.Context, adr string, body []byte) (Notification, error) {
+	t := &EditedPostPayload{}
+	err := json.Unmarshal(body, t)
+	if err != nil {
+		log.Errorf(ctx, "handleCreatedTopicEvent: %s", err.Error())
 		return nil, err
 	}
 	t.ForumURL = adr
