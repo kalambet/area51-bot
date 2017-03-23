@@ -5,6 +5,7 @@ api_version: go1
 
 env_variables:
   DISCOURSE_WEBHOOK: ""
+  DISCOURSE_API_KEY: ""
   TELEGRAM_WEBHOOK: ""
   TELEGRAM_SECRET: ""
   TELEGRAM_BOT_USERNAME: ""
