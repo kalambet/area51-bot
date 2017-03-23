@@ -99,18 +99,12 @@ func SendFormattedMessage(ctx context.Context, chat int64, text string, format s
 }
 
 func makeRequest(ctx context.Context, cmd string, data url.Values) {
-	c := urlfetch.Client(ctx)
-	if c == nil {
-		log.Errorf(ctx, "Can't create AppEngine urlfetch Client")
-		return
-	}
-
 	address := fmt.Sprintf("https://api.telegram.org/bot%s/%s", os.Getenv("TELEGRAM_SECRET"), cmd)
 
 	// Always add the telegram method we use to POST
 	data.Add("method", cmd)
 
-	resp, err := c.PostForm(address, data)
+	resp, err := urlfetch.Client(ctx).PostForm(address, data)
 	if err != nil {
 		log.Errorf(ctx, "Fail to make send message request %s. Payload: %#v", cmd, data)
 		return
