@@ -1,17 +1,16 @@
 package teledisq
 
-import (
-	"fmt"
-	"strings"
-)
-
 const (
 	TopicCreatedEventType = "topic_created"
 	PostCreatedEventType  = "post_created"
+	PostEditedEventType   = "post_edited"
 	EventHeader           = "X-Discourse-Event"
 	InstanceHeader        = "X-Discourse-Instance"
 )
 
+// Notify is a method-type that passed to the Store traversing method
+// So the actual notification will happen per topic at query time rather
+// than all at once after
 type Notify func(chat int64)
 
 // Post represents Discourse post entry from webhook payload
@@ -32,6 +31,7 @@ type Post struct {
 	UserID          int    `json:"user_id"`
 }
 
+// Tpoic trepresents Discourse topic entry from webhook payload
 type Topic struct {
 	ID        int    `json:"id"`
 	Title     string `json:"title"`
@@ -42,37 +42,9 @@ type Topic struct {
 	Slug      string `json:"slug"`
 }
 
+// User trepresents Discourse user entry from webhook payload
 type User struct {
 	ID       int    `json:"id"`
 	UserName string `json:"username"`
 	Name     string `json:"name"`
-}
-
-type NewTopicPayload struct {
-	Topic    *Topic `json:"topic"`
-	User     *User  `json:"user"`
-	ForumURL string
-}
-
-func (p *NewTopicPayload) Message() string {
-	url := fmt.Sprintf("%s/t/%s/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID)
-	return fmt.Sprintf("%s (%s) created new <a href=\"%s\">tpoic</a>:\n%s", p.User.Name, p.User.UserName, url, p.Topic.Title)
-}
-
-type NewPostPayload struct {
-	Topic    *Topic `json:"topic"`
-	Post     *Post  `json:"post"`
-	User     *User  `json:"user"`
-	ForumURL string
-}
-
-func (p *NewPostPayload) Message() string {
-	url := fmt.Sprintf("%s/t/%s/%d/%d", p.ForumURL, p.Topic.Slug, p.Topic.ID, p.Post.ID)
-
-	preview := p.Post.Preview
-	if strings.Contains(preview, "<div") || strings.Contains(preview, "<blockquote") {
-		preview = "but it's not possible for Telegram to do a preview"
-	}
-
-	return fmt.Sprintf("%s (%s) made new <a href=\"%s\">post</a>:\n\n%s", p.User.Name, p.User.UserName, url, preview)
 }
