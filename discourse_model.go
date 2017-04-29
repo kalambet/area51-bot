@@ -8,12 +8,9 @@ const (
 	InstanceHeader        = "X-Discourse-Instance"
 )
 
-// Notify is a method-type that passed to the Store traversing method
-// So the actual notification will happen per topic at query time rather
-// than all at once after
 type Notify func(chat int64)
 
-// Post represents Discourse post entry from webhook payload
+// Post represents Discourse post entry from web hook payload
 type Post struct {
 	ID              int    `json:"id"`
 	AuthorName      string `json:"name"`
@@ -31,18 +28,27 @@ type Post struct {
 	UserID          int    `json:"user_id"`
 }
 
-// Tpoic trepresents Discourse topic entry from webhook payload
 type Topic struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	Visible   bool   `json:"visible"`
-	UserID    int    `json:"user_id"`
-	Slug      string `json:"slug"`
+	ID        int          `json:"id"`
+	Title     string       `json:"title"`
+	CreatedAt string       `json:"created_at"`
+	UpdatedAt string       `json:"updated_at"`
+	Visible   bool         `json:"visible"`
+	UserID    int          `json:"user_id"`
+	Slug      string       `json:"slug"`
+	Details   *PostDetails `json:"details"`
 }
 
-// User trepresents Discourse user entry from webhook payload
+type PostDetails struct {
+	CreatedBy *UserDetils `json:"created_by"`
+}
+
+type UserDetils struct {
+	ID             int    `json:"id"`
+	UserName       string `json:"username"`
+	AvatarTemplate string `json:"avatar_template"`
+}
+
 type User struct {
 	ID       int    `json:"id"`
 	UserName string `json:"username"`
